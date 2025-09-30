@@ -11,13 +11,13 @@ warnings.filterwarnings('ignore')
 # Add subdirectories to path
 sys.path.append('MissingValue')
 sys.path.append('Transformasi')
-sys.path.append('EkstraksiFitur')
+sys.path.append('SeleksiFitur')
 sys.path.append('ImbalancedData')
 
 # Import custom modules
 from missing_value import MissingValueHandler, process_missing_values
 from transformasi import DataTransformer, process_data_transformation
-from ektraksi_fitur import FeatureExtractor, process_feature_extraction
+from seleksi_fitur import FeatureSelector, process_feature_selection
 from imbalanced_data import ImbalancedDataHandler, process_imbalanced_data
 
 class CervicalCancerPreprocessor:
@@ -109,34 +109,36 @@ class CervicalCancerPreprocessor:
     
     def run_feature_extraction(self, output_type='terminal', variance_threshold=0.95):
         """
-        Step 3: Feature extraction (PCA)
+        Step 3: Feature extraction (Seleksi Fitur ANOVA)
         """
-        print("\n" + "📊 STEP 3: FEATURE EXTRACTION (PCA)" + "\n" + "="*50)
+        print("\n" + "📊 STEP 3: FEATURE SELECTION (ANOVA)" + "\n" + "="*50)
         
         if self.processed_data is None:
             print("❌ No processed data available. Run previous steps first.")
             return False
         
         try:
-            pca_data, extractor, summary = process_feature_extraction(
-                self.processed_data, output_type=output_type, variance_threshold=variance_threshold
+            # Only pass data and k (number of top features)
+            selected_features, selector = process_feature_selection(
+                self.processed_data, k=10
             )
             
             self.results['feature_extraction'] = {
-                'pca_data': pca_data,
-                'extractor': extractor,
-                'summary': summary,
-                'variance_threshold': variance_threshold
+                'selected_features': selected_features,
+                'selector': selector,
+                'summary': None
             }
             
-            # Update processed data
-            self.processed_data = pca_data
+            # Update processed data (optional: keep only selected features)
+            if selected_features is not None:
+                selected_cols = selected_features['Feature'].tolist()
+                self.processed_data = self.processed_data[selected_cols + selector.target_columns]
             
-            print("✅ Feature extraction completed!")
+            print("✅ Feature selection completed!")
             return True
             
         except Exception as e:
-            print(f"❌ Error in feature extraction: {str(e)}")
+            print(f"❌ Error in feature selection: {str(e)}")
             return False
     
     def run_imbalanced_data_handling(self, output_type='terminal', method='ros'):
